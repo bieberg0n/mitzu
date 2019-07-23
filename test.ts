@@ -2,11 +2,11 @@ import Mitzu from './mitzu'
 
 const App = new Mitzu()
 
-App.route('/', 'GET', function () {
+App.GET('/', function () {
     return 'Hello, Mitzu!'
 })
 
-App.route('/test', 'GET', function () {
+App.GET('/test', function () {
     return 'Hello, Test!'
 })
 

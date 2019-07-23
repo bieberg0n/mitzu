@@ -6,27 +6,34 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = __importDefault(require("http"));
 class Mitzu {
     constructor() {
-        this.routers = {};
+        this.getRouters = {};
+        this.postRouters = {};
+        this.methodMap = {
+            'GET': this.getRouters,
+            'POST': this.postRouters,
+        };
     }
-    route(path, method, callback) {
-        if (!this.routers[path]) {
-            this.routers[path] = {};
-        }
-        this.routers[path][method] = callback;
+    GET(path, callback) {
+        this.getRouters[path] = callback;
+    }
+    POST(path, callback) {
+        this.postRouters[path] = callback;
     }
     run() {
         let s = http_1.default.createServer((req, res) => {
-            for (let r in this.routers) {
-                let router = this.routers[r];
-                if (req.url == r && (router[req.method] !== undefined)) {
-                    res.writeHead(200, { 'Content-Type': 'text/html' });
-                    res.write(router[req.method]());
-                    res.end();
-                    return;
-                }
+            let router = this.methodMap[req.method];
+            if (router === undefined) {
+                res.writeHead(415);
             }
-            res.writeHead(404);
-            res.end();
+            else if (router[req.url] === undefined) {
+                res.writeHead(404);
+                res.end();
+            }
+            else {
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.write(this.getRouters[req.url]());
+                res.end();
+            }
         });
         s.listen(8100);
     }
