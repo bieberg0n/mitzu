@@ -22,8 +22,11 @@ class Mitzu {
                     res.writeHead(200, { 'Content-Type': 'text/html' });
                     res.write(router[req.method]());
                     res.end();
+                    return;
                 }
             }
+            res.writeHead(404);
+            res.end();
         });
         s.listen(8100);
     }
