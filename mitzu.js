@@ -19,7 +19,7 @@ class Mitzu {
     POST(path, callback) {
         this.postRouters[path] = callback;
     }
-    run() {
+    run(port) {
         let s = http_1.default.createServer((req, res) => {
             let router = this.methodMap[req.method];
             if (router === undefined) {
@@ -27,15 +27,17 @@ class Mitzu {
             }
             else if (router[req.url] === undefined) {
                 res.writeHead(404);
-                res.end();
+                // res.end()
             }
             else {
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.write(this.getRouters[req.url]());
-                res.end();
+                // res.writeHead(200, {'Content-Type': 'text/html'})
+                // res.write(this.getRouters[req.url!]())
+                // res.end()
+                this.getRouters[req.url](res);
             }
+            res.end();
         });
-        s.listen(8100);
+        s.listen(port);
     }
 }
 exports.default = Mitzu;

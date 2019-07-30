@@ -1,7 +1,7 @@
 import http, {IncomingMessage, ServerResponse} from 'http'
 
 type Routers = {
-    [key: string]: () => string
+    [key: string]: (res: ServerResponse) => void
 }
 
 export default class Mitzu {
@@ -12,15 +12,15 @@ export default class Mitzu {
         'POST': this.postRouters,
     }
 
-    GET(path: string, callback: () => string) {
+    GET(path: string, callback: (res: ServerResponse) => void) {
         this.getRouters[path] = callback
     }
 
-    POST(path: string, callback: () => string) {
+    POST(path: string, callback: (res: ServerResponse) => void) {
         this.postRouters[path] = callback
     }
 
-    run() {
+    run(port: number) {
         let s = http.createServer((req: IncomingMessage, res: ServerResponse) => {
             let router = this.methodMap[req.method!]
             if (router === undefined) {
@@ -28,14 +28,16 @@ export default class Mitzu {
 
             } else if (router[req.url!] === undefined) {
                 res.writeHead(404)
-                res.end()
+                // res.end()
 
             } else {
-                res.writeHead(200, {'Content-Type': 'text/html'})
-                res.write(this.getRouters[req.url!]())
-                res.end()
+                // res.writeHead(200, {'Content-Type': 'text/html'})
+                // res.write(this.getRouters[req.url!]())
+                // res.end()
+                this.getRouters[req.url!](res)
             }
+            res.end()
         })
-        s.listen(8100)
+        s.listen(port)
     }
 }
