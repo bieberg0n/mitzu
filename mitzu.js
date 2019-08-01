@@ -12,39 +12,60 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = __importDefault(require("http"));
 const fs = __importStar(require("fs"));
+const mime_1 = __importDefault(require("mime"));
 const log = function (...args) {
     console.log(...args);
 };
 class Response {
-    constructor() {
+    constructor(res) {
         this.statusCode = 200;
-        this.headers = { content: 'text/html' };
+        this.headers = { 'Content-Type': 'text/html' };
         this.content = '';
+        this.rawRes = res;
     }
-    str(s) {
-        this.headers = { content: 'text/plain' };
+    alert(n) {
+        this.statusCode = n;
+        this.write();
+    }
+    text(s) {
+        this.headers = { 'Content-Type': 'text/plain' };
         this.content = s;
+        this.write();
     }
-    html(filePath) {
+    _file(filePath) {
         if (fs.existsSync(filePath)) {
-            this.content = fs.readFileSync(filePath).toString();
+            this.rawRes.writeHead(200, this.headers);
+            fs.createReadStream(filePath).pipe(this.rawRes);
         }
         else {
             this.statusCode = 404;
+            this.write();
         }
     }
+    html(filePath) {
+        this._file(filePath);
+    }
     file(filePath) {
-        this.headers = { content: 'application/*' };
-        this.html(filePath);
+        let t = mime_1.default.getType(filePath);
+        // log(t)
+        if (t === null) {
+            this.statusCode = 404;
+            this.write();
+        }
+        else {
+            this.headers = { 'Content-Type': t };
+            this._file(filePath);
+        }
     }
     json(o) {
-        this.headers = { content: 'application/json' };
+        this.headers = { 'Content-Type': 'application/json' };
         this.content = JSON.stringify(o);
+        this.write();
     }
-    write(res) {
-        res.writeHead(this.statusCode, this.headers);
-        res.write(this.content);
-        res.end();
+    write() {
+        this.rawRes.writeHead(this.statusCode, this.headers);
+        this.rawRes.write(this.content);
+        this.rawRes.end();
     }
 }
 class Context {
@@ -71,22 +92,21 @@ class Mitzu {
     }
     run(port) {
         let s = http_1.default.createServer((req, res) => {
-            let resp = new Response();
+            let resp = new Response(res);
             let router = this.methodMap[req.method];
             if (router === undefined) {
-                resp.statusCode = 415;
+                resp.alert(415);
             }
             else if (req.method === 'GET' && req.url.startsWith('/static/')) {
                 let filePath = '.' + req.url;
                 resp.file(filePath);
             }
             else if (router[req.url] === undefined) {
-                resp.statusCode = 404;
+                resp.alert(404);
             }
             else {
                 this.getRouters[req.url](new Context(req, resp));
             }
-            resp.write(res);
             log(new Date().toLocaleString(), req.method, req.url, resp.statusCode.toString());
         });
         s.listen(port);

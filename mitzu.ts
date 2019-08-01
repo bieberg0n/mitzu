@@ -1,5 +1,6 @@
 import http, {IncomingMessage, OutgoingHttpHeaders, ServerResponse} from 'http'
 import * as fs from "fs"
+import mime from 'mime'
 
 const log = function <T>(...args: T[]) {
     console.log(...args)
@@ -7,36 +8,61 @@ const log = function <T>(...args: T[]) {
 
 class Response {
     statusCode: number = 200
-    headers: OutgoingHttpHeaders = {content: 'text/html'}
+    headers: OutgoingHttpHeaders = {'Content-Type': 'text/html'}
     content: any = ''
+    rawRes: ServerResponse
 
-    str(s: string) {
-        this.headers = {content: 'text/plain'}
-        this.content = s
+    constructor(res: ServerResponse) {
+        this.rawRes = res
     }
 
-    html(filePath: string) {
+    alert (n: number) {
+        this.statusCode = n
+        this.write()
+    }
+
+    text(s: string) {
+        this.headers = {'Content-Type': 'text/plain'}
+        this.content = s
+        this.write()
+    }
+
+    _file(filePath: string) {
         if (fs.existsSync(filePath)) {
-            this.content = fs.readFileSync(filePath).toString()
+            this.rawRes.writeHead(200, this.headers)
+            fs.createReadStream(filePath).pipe(this.rawRes)
         } else {
             this.statusCode = 404
+            this.write()
         }
     }
 
+    html(filePath: string) {
+        this._file(filePath)
+    }
+
     file(filePath: string) {
-        this.headers = {content: 'application/*'}
-        this.html(filePath)
+        let t = mime.getType(filePath)
+        // log(t)
+        if (t === null) {
+            this.statusCode = 404
+            this.write()
+        } else {
+            this.headers = {'Content-Type': t}
+            this._file(filePath)
+        }
     }
 
     json(o: object) {
-        this.headers = {content: 'application/json'}
+        this.headers = {'Content-Type': 'application/json'}
         this.content = JSON.stringify(o)
+        this.write()
     }
 
-    write(res: ServerResponse) {
-        res.writeHead(this.statusCode, this.headers)
-        res.write(this.content)
-        res.end()
+    write() {
+        this.rawRes.writeHead(this.statusCode, this.headers)
+        this.rawRes.write(this.content)
+        this.rawRes.end()
     }
 }
 
@@ -71,22 +97,21 @@ export default class Mitzu {
 
     run(port: number) {
         let s = http.createServer((req: IncomingMessage, res: ServerResponse) => {
-            let resp = new Response()
+            let resp = new Response(res)
             let router = this.methodMap[req.method!]
             if (router === undefined) {
-                resp.statusCode = 415
+                resp.alert(415)
 
             } else if (req.method === 'GET' && req.url!.startsWith('/static/')) {
                 let filePath = '.' + req.url!
                 resp.file(filePath)
 
             } else if (router[req.url!] === undefined) {
-                resp.statusCode = 404
+                resp.alert(404)
 
             } else {
                 this.getRouters[req.url!](new Context(req, resp))
             }
-            resp.write(res)
             log(new Date().toLocaleString(), req.method, req.url, resp.statusCode.toString())
         })
         s.listen(port)

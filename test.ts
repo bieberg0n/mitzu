@@ -3,11 +3,11 @@ import Mitzu, {Context} from './mitzu'
 const app = new Mitzu()
 
 app.GET('/', function (c: Context) {
-    c.res.str('hello mitzu!')
+    c.res.text('hello mitzu!')
 })
 
 app.GET('/test', function (c: Context) {
-    c.res.str('hello, test!')
+    c.res.text('hello, test!')
 })
 
 app.GET('/html', function (c: Context) {

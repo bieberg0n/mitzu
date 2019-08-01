@@ -2,6 +2,14 @@
 # yarn lockfile v1
 
 
+"@types/mime@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.npm.taobao.org/@types/mime/download/@types/mime-2.0.1.tgz#dc488842312a7f075149312905b5e3c0b054c79d"
+
 "@types/node@^12.6.8":
   version "12.6.8"
   resolved "https://registry.npm.taobao.org/@types/node/download/@types/node-12.6.8.tgz?cache=0&sync_timestamp=1563391049881&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fnode%2Fdownload%2F%40types%2Fnode-12.6.8.tgz#e469b4bf9d1c9832aee4907ba8a051494357c12c"
+
+mime@^2.4.4:
+  version "2.4.4"
+  resolved "https://registry.npm.taobao.org/mime/download/mime-2.4.4.tgz?cache=0&sync_timestamp=1560034758817&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fmime%2Fdownload%2Fmime-2.4.4.tgz#bd7b91135fc6b01cde3e9bae33d659b63d8857e5"
