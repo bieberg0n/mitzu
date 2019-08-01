@@ -1,19 +1,24 @@
-import {ServerResponse} from 'http'
-import Mitzu from './mitzu'
+import Mitzu, {Context} from './mitzu'
 
-const App = new Mitzu()
+const app = new Mitzu()
 
-App.GET('/', function (res: ServerResponse) {
-    res.writeHead(200, {'Content-Type': 'text/html'})
-    res.write('Hello, Mitzu!')
-    // res.writeHead(200)
-    // return
+app.GET('/', function (c: Context) {
+    c.res.str('hello mitzu!')
 })
 
-App.GET('/test', function (res: ServerResponse) {
-    res.writeHead(200, {'Content-Type': 'text/html'})
-    res.write('Hello, Test!')
-    // return 'Hello, Test!'
+app.GET('/test', function (c: Context) {
+    c.res.str('hello, test!')
 })
 
-App.run(8100)
+app.GET('/html', function (c: Context) {
+    c.res.html('./test.html')
+})
+
+app.GET('/api', function (c: Context) {
+    c.res.json({
+        a: 'a',
+        b: 2,
+    })
+})
+
+app.run(8100)

@@ -4,16 +4,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mitzu_1 = __importDefault(require("./mitzu"));
-const App = new mitzu_1.default();
-App.GET('/', function (res) {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.write('Hello, Mitzu!');
-    // res.writeHead(200)
-    // return
+const app = new mitzu_1.default();
+app.GET('/', function (c) {
+    c.res.str('hello mitzu!');
 });
-App.GET('/test', function (res) {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.write('Hello, Test!');
-    // return 'Hello, Test!'
+app.GET('/test', function (c) {
+    c.res.str('hello, test!');
 });
-App.run(8100);
+app.GET('/html', function (c) {
+    c.res.html('./test.html');
+});
+app.GET('/api', function (c) {
+    c.res.json({
+        a: 'a',
+        b: 2,
+    });
+});
+app.run(8100);
