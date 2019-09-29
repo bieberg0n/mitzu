@@ -91,6 +91,7 @@ class Mitzu {
         this.postRouters[path] = callback;
     }
     run(port) {
+        log(`Listen on ${port}...`);
         let s = http_1.default.createServer((req, res) => {
             let resp = new Response(res);
             let router = this.methodMap[req.method];

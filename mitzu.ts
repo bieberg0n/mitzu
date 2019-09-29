@@ -96,6 +96,8 @@ export default class Mitzu {
     }
 
     run(port: number) {
+        log(`Listen on ${port}...`)
+
         let s = http.createServer((req: IncomingMessage, res: ServerResponse) => {
             let resp = new Response(res)
             let router = this.methodMap[req.method!]
