@@ -20,4 +20,8 @@ app.GET('/api', function (c) {
         b: 2,
     });
 });
+app.GET('/user/<test>', function (c) {
+    let v = c.param.test;
+    c.res.text(`welcome! ${v}`);
+});
 app.run(8100);

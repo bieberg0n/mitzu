@@ -1,10 +1,7 @@
 import http, {IncomingMessage, OutgoingHttpHeaders, ServerResponse} from 'http'
 import * as fs from "fs"
 import mime from 'mime'
-
-const log = function <T>(...args: T[]) {
-    console.log(...args)
-}
+import {log} from './utils'
 
 class Response {
     statusCode: number = 200
@@ -67,9 +64,11 @@ class Response {
 }
 
 export class Context {
+    param: {[key: string]: string}
     req: IncomingMessage
     res: Response
     constructor (req: IncomingMessage, res: Response) {
+        this.param = {}
         this.req = req
         this.res = res
     }
@@ -77,6 +76,25 @@ export class Context {
 
 type Routers = {
     [key: string]: (c: Context) => void
+}
+
+const dynamicMatch = function(routeParts: string[], urlParts: string[]): [boolean, string[]] {
+    let kv = ['', '']
+    if (routeParts.length !== urlParts.length) {
+        return [false, kv]
+    }
+
+    for (let i = 0; i < routeParts.length; i++) {
+        let rP = routeParts[i]
+        let uP = urlParts[i]
+        if (/^<.+>$/.test(rP)) {
+            kv = [rP.slice(1, -1), uP]
+        } else if (rP !== uP) {
+            return [false, kv]
+        }
+    }
+    log(kv)
+    return [true, kv]
 }
 
 export default class Mitzu {
@@ -95,24 +113,41 @@ export default class Mitzu {
         this.postRouters[path] = callback
     }
 
+    handler(routers: Routers, url: string) {
+        let urlParts = url.split('/')
+
+        for (let route of Object.keys(routers)) {
+            let routeParts = route.split('/')
+            let [ok, kv] = dynamicMatch(routeParts, urlParts)
+            if (ok) {
+                return (c: Context) => {
+                    if (kv[0] !== '') {
+                        c.param[kv[0]] = kv[1]
+                    }
+                    return routers[route](c)
+                }
+            }
+        }
+
+        return (c: Context) => c.res.alert(404)
+    }
+
     run(port: number) {
         log(`Listen on ${port}...`)
 
         let s = http.createServer((req: IncomingMessage, res: ServerResponse) => {
             let resp = new Response(res)
-            let router = this.methodMap[req.method!]
-            if (router === undefined) {
+            let routers = this.methodMap[req.method!]
+            if (routers === undefined) {
                 resp.alert(415)
 
             } else if (req.method === 'GET' && req.url!.startsWith('/static/')) {
                 let filePath = '.' + req.url!
                 resp.file(filePath)
 
-            } else if (router[req.url!] === undefined) {
-                resp.alert(404)
-
             } else {
-                this.getRouters[req.url!](new Context(req, resp))
+                let handle = this.handler(routers, req.url!)
+                handle(new Context(req, resp))
             }
             log(new Date().toLocaleString(), req.method, req.url, resp.statusCode.toString())
         })

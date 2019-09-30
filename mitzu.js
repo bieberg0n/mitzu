@@ -13,9 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = __importDefault(require("http"));
 const fs = __importStar(require("fs"));
 const mime_1 = __importDefault(require("mime"));
-const log = function (...args) {
-    console.log(...args);
-};
+const utils_1 = require("./utils");
 class Response {
     constructor(res) {
         this.statusCode = 200;
@@ -70,11 +68,30 @@ class Response {
 }
 class Context {
     constructor(req, res) {
+        this.param = {};
         this.req = req;
         this.res = res;
     }
 }
 exports.Context = Context;
+const dynamicMatch = function (routeParts, urlParts) {
+    let kv = ['', ''];
+    if (routeParts.length !== urlParts.length) {
+        return [false, kv];
+    }
+    for (let i = 0; i < routeParts.length; i++) {
+        let rP = routeParts[i];
+        let uP = urlParts[i];
+        if (/^<.+>$/.test(rP)) {
+            kv = [rP.slice(1, -1), uP];
+        }
+        else if (rP !== uP) {
+            return [false, kv];
+        }
+    }
+    utils_1.log(kv);
+    return [true, kv];
+};
 class Mitzu {
     constructor() {
         this.getRouters = {};
@@ -90,25 +107,39 @@ class Mitzu {
     POST(path, callback) {
         this.postRouters[path] = callback;
     }
+    handler(routers, url) {
+        let urlParts = url.split('/');
+        for (let route of Object.keys(routers)) {
+            let routeParts = route.split('/');
+            let [ok, kv] = dynamicMatch(routeParts, urlParts);
+            if (ok) {
+                return (c) => {
+                    if (kv[0] !== '') {
+                        c.param[kv[0]] = kv[1];
+                    }
+                    return routers[route](c);
+                };
+            }
+        }
+        return (c) => c.res.alert(404);
+    }
     run(port) {
-        log(`Listen on ${port}...`);
+        utils_1.log(`Listen on ${port}...`);
         let s = http_1.default.createServer((req, res) => {
             let resp = new Response(res);
-            let router = this.methodMap[req.method];
-            if (router === undefined) {
+            let routers = this.methodMap[req.method];
+            if (routers === undefined) {
                 resp.alert(415);
             }
             else if (req.method === 'GET' && req.url.startsWith('/static/')) {
                 let filePath = '.' + req.url;
                 resp.file(filePath);
             }
-            else if (router[req.url] === undefined) {
-                resp.alert(404);
-            }
             else {
-                this.getRouters[req.url](new Context(req, resp));
+                let handle = this.handler(routers, req.url);
+                handle(new Context(req, resp));
             }
-            log(new Date().toLocaleString(), req.method, req.url, resp.statusCode.toString());
+            utils_1.log(new Date().toLocaleString(), req.method, req.url, resp.statusCode.toString());
         });
         s.listen(port);
     }

@@ -1,4 +1,5 @@
 import Mitzu, {Context} from './mitzu'
+import {log} from './utils'
 
 const app = new Mitzu()
 
@@ -19,6 +20,11 @@ app.GET('/api', function (c: Context) {
         a: 'a',
         b: 2,
     })
+})
+
+app.GET('/user/<test>', function (c: Context) {
+    let v = c.param.test
+    c.res.text(`welcome! ${v}`)
 })
 
 app.run(8100)
