@@ -2,6 +2,7 @@ import http, {IncomingMessage, OutgoingHttpHeaders, ServerResponse} from 'http'
 import * as fs from "fs"
 import mime from 'mime'
 import {log} from './utils'
+import io from 'socket.io'
 
 class Response {
     statusCode: number = 200
@@ -132,7 +133,7 @@ export default class Mitzu {
         return (c: Context) => c.res.alert(404)
     }
 
-    run(port: number) {
+    run(port: number, callbackBeforeRun: ((s: http.Server) => void) | null = null) {
         log(`Listen on ${port}...`)
 
         let s = http.createServer((req: IncomingMessage, res: ServerResponse) => {
@@ -151,6 +152,11 @@ export default class Mitzu {
             }
             log(new Date().toLocaleString(), req.method, req.url, resp.statusCode.toString())
         })
+
+        if (callbackBeforeRun) {
+            callbackBeforeRun(s)
+        }
+
         s.listen(port)
     }
 }

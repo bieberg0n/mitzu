@@ -1,4 +1,6 @@
 import Mitzu, {Context} from './mitzu'
+import io from 'socket.io'
+import http from 'http'
 import {log} from './utils'
 
 const app = new Mitzu()
@@ -27,4 +29,12 @@ app.GET('/user/<test>', function (c: Context) {
     c.res.text(`welcome! ${v}`)
 })
 
-app.run(8100)
+const socketioCallback = function (s: http.Server) {
+    let ws = io(s)
+    ws.on('connection', (socket) => {
+        log('a user connected');
+    })
+    log('io init over')
+}
+
+app.run(8100, socketioCallback)
